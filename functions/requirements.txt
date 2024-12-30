@@ -1,0 +1,11 @@
+firebase-functions
+firebase-admin
+pandas
+numpy
+langchain-core
+langchain-groq
+regex
+flask
+numpy==1.26.4
+langchain-community
+
