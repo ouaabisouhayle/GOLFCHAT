@@ -1,0 +1,13 @@
+aiohttp==3.10.10
+alembic==1.13.2
+Flask==3.0.3
+#numpy==1.26.4
+pandas==2.2.3
+sqlalchemy==2.0.36
+firebase-admin==6.6.0
+gptcache==0.1.44
+langchain-core==0.2.38
+langchain-groq==0.1.9
+pydantic==2.9.2
+requests==2.32.3
+werkzeug==3.0.4
