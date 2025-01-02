@@ -2,7 +2,7 @@ import pandas as pd
 import sqlite3
 import sys
 import os
-
+import codecs
 
 def infer_sqlite_type(pd_series_type):
     '''

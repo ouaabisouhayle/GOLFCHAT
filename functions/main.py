@@ -24,7 +24,7 @@ DATASETS = {
 
 # LLM configuration
 llm = ChatGroq(
-    groq_api_key="your_groq_api_key",
+    groq_api_key="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",
     model_name="llama3-70b-8192"
 )
 
@@ -130,14 +130,14 @@ CORS_HEADERS = {
 # Define the HTTPS function
 @https_fn.on_request()
 def process_question(request: https_fn.Request) -> https_fn.Response:
-    # Handle CORS preflight request
-    if request.method == 'OPTIONS':
-        return https_fn.Response('', status=204, headers=CORS_HEADERS)
-    
-    # Set CORS headers for actual request
-    headers = CORS_HEADERS.copy()
-    
-    try:
+        # Handle CORS preflight request
+        if request.method == 'OPTIONS':
+            return https_fn.Response('', status=204, headers=CORS_HEADERS)
+        
+        # Set CORS headers for actual request
+        headers = CORS_HEADERS.copy()
+        
+    # try:
         if request.method != 'POST':
             return https_fn.Response("Method Not Allowed", status=405, headers=headers)
         
@@ -244,12 +244,12 @@ def process_question(request: https_fn.Request) -> https_fn.Response:
             headers=headers
         )
 
-    except Exception as e:
-        error_response = {
-            "error": str(e),
-        }
-        return https_fn.Response(
-            error_response,
-            status=500,
-            headers=headers
-        )
+    # except Exception as e:
+    #     error_response = {
+    #         "error": str(e),
+    #     }
+    #     return https_fn.Response(
+    #         error_response,
+    #         status=500,
+    #         headers=headers
+    #     )
