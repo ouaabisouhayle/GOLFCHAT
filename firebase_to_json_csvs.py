@@ -149,7 +149,8 @@ def main():
 
 
 
-
+    import pandas as pd
+    import json
 
     def load_json(file_path):
         """
@@ -183,7 +184,7 @@ def main():
                         player_info = {
                             'player_name': player.get('Name'),
                             'finish_position': player.get('Finish_Position'),
-                            'perk_cup_value': player.get('PerkCup_Value'),
+                            'perkcup_points': player.get('PerkCup_Value'),
                             'sg_total': player.get('SG_Total'),
                             'sg_app': player.get('SG_APP'),
                             'sg_ott': player.get('SG_OTT'),
@@ -270,13 +271,77 @@ def main():
         players_info_df = extract_players_info(data)
 
         # Save to CSV
+        # Define the required columns
+        required_columns = [
+            "year", "tour","finish_date", "event_name", "event_id", "last_fetched", 
+            "player_name", "finish_position", "perkcup_points", 
+            "sg_total", "sg_arg"
+        ]
+
+        # Filter the dataframe
+        tournaments_df = tournaments_df[required_columns]  # Keep only required columns
+        tournaments_df = tournaments_df[tournaments_df["tour"] == "pga"]  # Keep only rows where tour == 'pga'
+
         save_to_csv(tournaments_df, 'functions/CSV DATA/tournaments.csv')
         #save_to_csv(players_df, 'events.csv')
         save_to_csv(players_info_df, 'functions/CSV DATA/players_info.csv')
 
 
     main1()
+    import json
+    import csv
 
+    # Load JSON data from file
+    with open("firestore_full_database.json", "r") as file:
+        data = json.load(file)
+
+    # Extract relevant tournament data
+    tournaments = data.get("2025_tournaments", {})
+
+    tournament_rows = []
+
+    for tournament_id, tournament_data in tournaments.items():
+        players = tournament_data.get("players", {})
+        for player_id, player_data in players.items():
+            tournament_rows.append([
+                tournament_id,
+                2025,
+                player_data.get("player_name", ""),
+                player_data.get("sg_total", 0),
+                player_data.get("perkcup_points", 0),
+                player_data.get("fin_text", "")
+            ])
+
+    # Save to CSV
+    csv_filename = "functions/CSV DATA/2025_tournaments_data.csv"
+    with open(csv_filename, "w", newline="") as csvfile:
+        csv_writer = csv.writer(csvfile)
+        csv_writer.writerow(["event_id", "year","player_name", "sg_total", "perkcup_points", "finish_position"])
+        csv_writer.writerows(tournament_rows)
+
+    print(f"CSV file '{csv_filename}' created successfully.")
+    # Load both CSV files
+    df1 = pd.read_csv('functions/CSV DATA/2025_tournaments_data.csv')
+    df2 = pd.read_csv('functions/CSV DATA/tournaments.csv')
+    # Concatenate while keeping all columns from both DataFrames
+
+    combined_df = pd.concat([df1, df2], axis=0, ignore_index=True)
+    id_to_name = {
+        6: "Sony Open in Hawaii",
+        2: "The American Express",
+        16: "The Sentry",
+        4 : "Farmers Insurance Open"
+    }
+
+    # Fill missing event_name values based on event_id
+    combined_df['event_name'] = combined_df.apply(lambda row: id_to_name.get(row['event_id'], row['event_name']), axis=1)
+
+    # Save the merged DataFrame to a new CSV file
+    combined_df.to_csv('functions/CSV DATA/tournaments.csv', index=False)
+
+
+    import json
+    import pandas as pd
 
     # Function to load JSON data
     def load_json(file_path):
@@ -302,6 +367,10 @@ def main():
             tour = year_details.get("tour", "N/A")
             tournament_id = year_details.get("tournament_id", "N/A")
             date = year_details.get("date", "N/A")
+            if date == "N/A":
+                print(f"Missing date for event ID: {event_id}, year: {year}")
+            if date != "N/A":
+                print(f"Event ID: {event_id}, year: {year}, date: {date}")
             actual_results = year_details.get("actual_results", [])
 
             for player in actual_results:
@@ -310,11 +379,6 @@ def main():
                 fin_text = player.get("fin_text", "N/A")
                 strokes_gained = player.get("strokes_gained", 0)
                 percup_value = player.get("perkcup_value", 0)  # Include `perkcup_value` with default 0
-                rounds = player.get("rounds", {})
-                round_1 = rounds.get("round_1", {})
-                round_2 = rounds.get("round_2", {})
-                round_3 = rounds.get("round_3", {})
-                round_4 = rounds.get("round_4", {})
 
                 # Add player details to rows
                 rows.append({
@@ -329,14 +393,6 @@ def main():
                     "Final Position": fin_text,
                     "Strokes Gained": strokes_gained,
                     "Perkcup Value": percup_value,
-                    "Round 1 Score": round_1.get("score", 0),
-                    "Round 1 SG Total": round_1.get("sg_total", 0),
-                    "Round 2 Score": round_2.get("score", 0),
-                    "Round 2 SG Total": round_2.get("sg_total", 0),
-                    "Round 3 Score": round_3.get("score", 0),
-                    "Round 3 SG Total": round_3.get("sg_total", 0),
-                    "Round 4 Score": round_4.get("score", 0),
-                    "Round 4 SG Total": round_4.get("sg_total", 0),
                 })
 
     # Create a DataFrame and save it as a CSV
@@ -344,6 +400,8 @@ def main():
     df = pd.DataFrame(rows)
     df.to_csv(output_file, index=False)
     print(f"All event scores data saved to {output_file}")
+    import json
+    import csv
 
     def load_json(file_path):
         """
@@ -352,16 +410,10 @@ def main():
         with open(file_path, 'r') as file:
             return json.load(file)
 
+    import pandas as pd
+    import json
 
     def save_blocks_with_names(blocks, output_file):
-        """
-        Combines PerkCup Points and Players' Historical Finish Positions data from blocks with player names
-        and saves the combined result as a CSV file.
-
-        Args:
-            blocks (dict): The JSON data containing block information.
-            output_file (str): The path to save the combined CSV.
-        """
         # Extract PerkCup Points data
         perkcuppoints_data = []
         for block_key, block_data in blocks.items():
@@ -427,6 +479,8 @@ def main():
     output_file = "functions/CSV DATA/blocks_with_names.csv"
     save_blocks_with_names(blocks_data, output_file)
 
+    import os
+    import pandas as pd
 
     # Path to your CSV data directory
     directory = 'functions/CSV DATA'
@@ -445,14 +499,15 @@ def main():
             # Save the modified DataFrame back to the same file
             df.to_csv(file_path, index=False)
             print(f"Processed: {filename}")
+    import pandas as pd
 
     # Load the CSV files
     events_scores_path = 'functions/CSV DATA/all_event_scores.csv'
     tournaments_path = 'functions/CSV DATA/tournaments.csv'
-
     # Read the data
     events_scores_df = pd.read_csv(events_scores_path)
     tournaments_df = pd.read_csv(tournaments_path)
+    print(tournaments_df[tournaments_df["year"]==2025])
 
     # Normalize column names for joining
     tournaments_df.rename(columns={
@@ -465,8 +520,9 @@ def main():
 
     # Perform the merge (inner join based on Event_ID and Player_Name)
     merged_df = pd.merge(
-        events_scores_df,
         tournaments_df,
+        events_scores_df,
+
         on=['Event_ID', 'Player_Name'],
         how='inner',
         suffixes=('', '_duplicate')  # Avoid suffixes where possible
@@ -477,8 +533,7 @@ def main():
     merged_df = merged_df[columns_to_keep]
     columns_to_keep
     # Drop specified columns
-    merged_df.drop(columns=['finish_date', 'last_fetched', 'Final_Position'], inplace=True)
-
+    merged_df.drop(columns=[ 'last_fetched', 'Final_Position'], inplace=True)
     # Extract 'Month' and 'Day' from 'Date' column
     merged_df['Month'] = pd.to_datetime(merged_df['Date']).dt.month
     merged_df['Day'] = pd.to_datetime(merged_df['Date']).dt.day
@@ -499,6 +554,7 @@ def main():
     # Save the cleaned dataframe
     merged_df.to_csv("functions/CSV DATA/tours_events.csv", index=False)
 
+    import pandas as pd
 
     # Load the datasets
     players_info_path = 'functions/CSV DATA/players_info.csv'
@@ -546,11 +602,23 @@ def main():
     columns_to_drop = [col for col in df.columns if col.startswith(prefixes_to_drop)]
     df = df.drop(columns=columns_to_drop)
 
+    # Drop duplicates based on the specified columns
+    df = df.drop_duplicates(subset=["event_id", "player_name", "event_year", "month", "day", "event_name_final", "event_tour"], keep="first")
+
+    df['finish_date'] = pd.to_datetime(df['finish_date'], format="%d/%m/%Y", errors='coerce')
+
+    # Fill 'month' column with month extracted from 'finish_date'
+    df['month'] = df['finish_date'].dt.month
+
     # Save the cleaned DataFrame
     cleaned_file_path = "functions/CSV DATA/tours_events_players.csv"
     df.to_csv(cleaned_file_path, index=False)
+
     print(f"Cleaned CSV saved to {cleaned_file_path}")
     print("combined tours_events_players is saved ")
+    df[df["event_year"]==2025]
+
+
 
 
 if __name__ == "__main__":
