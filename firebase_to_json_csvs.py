@@ -605,10 +605,17 @@ def main():
     # Drop duplicates based on the specified columns
     df = df.drop_duplicates(subset=["event_id", "player_name", "event_year", "month", "day", "event_name_final", "event_tour"], keep="first")
 
-    df['finish_date'] = pd.to_datetime(df['finish_date'], format="%d/%m/%Y", errors='coerce')
+    # Ensure 'finish_date' is a string before processing
+    df['finish_date'] = df['finish_date'].astype(str)
 
-    # Fill 'month' column with month extracted from 'finish_date'
+    # Convert 'finish_date' to datetime, handling errors safely
+    df['finish_date'] = pd.to_datetime(df['finish_date'], format="%Y-%m-%d", errors='coerce')
+
+    # Extract the month, converting NaN values to a default value (e.g., -1 or keeping them as None)
     df['month'] = df['finish_date'].dt.month
+
+    # Replace NaN values with a default (optional)
+    df['month'] = df['month'].fillna(-1).astype(int)
 
     # Save the cleaned DataFrame
     cleaned_file_path = "functions/CSV DATA/tours_events_players.csv"
